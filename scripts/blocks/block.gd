@@ -2,6 +2,8 @@ class_name Block
 extends Resource
 
 @export var display_name := ""
+## Damage needed to break the block.
+@export var durability := 10.0
 @export var fill_color := Color.WHITE
 @export var edge_color := Color.BLACK
 ## Height in pixels of a strip painted along the top edge, like grass. 0 disables it.

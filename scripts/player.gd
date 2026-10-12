@@ -94,7 +94,9 @@ func _shoot(weapon: Weapon) -> void:
 		aim = Vector2.RIGHT
 
 	var projectile := PROJECTILE_SCENE.instantiate()
-	projectile.direction = aim
 	projectile.weapon = weapon
+	projectile.velocity = aim * weapon.projectile_speed
+	projectile.damage = weapon.damage
+	projectile.splash_radius = weapon.splash_radius
 	projectile.position = position + aim * PROJECTILE_SPAWN_OFFSET
 	get_parent().add_child(projectile)

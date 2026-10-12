@@ -3,15 +3,15 @@ extends Node2D
 const LIFETIME := 2.0
 const WORLD_COLLISION_MASK := 1
 
-var direction := Vector2.RIGHT
 var weapon: Weapon
 var velocity := Vector2.ZERO
+var damage := 0.0
+var splash_radius := 0.0
 
 @onready var body: ColorRect = $ColorRect
 
 
 func _ready() -> void:
-	velocity = direction * weapon.projectile_speed
 	rotation = velocity.angle()
 	body.color = weapon.projectile_color
 	body.size = weapon.projectile_size
@@ -32,6 +32,6 @@ func _physics_process(delta: float) -> void:
 		global_position = next_position
 		return
 
-	if hit.collider.has_method("destroy_area"):
-		hit.collider.destroy_area(hit.position - hit.normal, weapon.blast_radius)
+	if hit.collider.has_method("damage_area"):
+		hit.collider.damage_area(hit.position - hit.normal, splash_radius, damage)
 	queue_free()

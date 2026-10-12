@@ -29,10 +29,15 @@ var _loaded := {}
 ## Maps a cell to its Block, or null for a removed block.
 var _edits := {}
 var _atlas_column := {}
+## Damage taken so far by blocks that haven't broken yet.
+var _damage := {}
+var _cracks := Node2D.new()
 
 
 func _ready() -> void:
 	tile_set = _build_tile_set()
+	_cracks.draw.connect(_draw_cracks)
+	add_child(_cracks)
 
 
 func generate(world_seed: int) -> void:
@@ -42,6 +47,8 @@ func generate(world_seed: int) -> void:
 	clear()
 	_loaded.clear()
 	_edits.clear()
+	_damage.clear()
+	_cracks.queue_redraw()
 
 
 ## Loads the chunks around a point and unloads the far ones.
@@ -95,6 +102,21 @@ func get_block(cell: Vector2i) -> Block:
 func set_block(cell: Vector2i, block: Block) -> void:
 	_place(cell, block)
 	_edits[cell] = block
+	if _damage.erase(cell):
+		_cracks.queue_redraw()
+
+
+## Damages the block in a cell and breaks it once the damage reaches its durability.
+func damage_block(cell: Vector2i, amount: float) -> void:
+	var block := get_block(cell)
+	if not block:
+		return
+	var total: float = _damage.get(cell, 0.0) + amount
+	if total >= block.durability:
+		set_block(cell, null)
+	else:
+		_damage[cell] = total
+		_cracks.queue_redraw()
 
 
 ## Global position of the top edge of the surface cell in the column.
@@ -103,15 +125,26 @@ func get_surface_position(column: int) -> Vector2:
 	return to_global(map_to_local(cell) - Vector2(0, CELL_SIZE / 2.0))
 
 
-func destroy_area(world_point: Vector2, radius: float) -> void:
+## Damages the block at the point, plus every block whose center is within the splash radius.
+func damage_area(world_point: Vector2, splash_radius: float, amount: float) -> void:
 	var center := local_to_map(to_local(world_point))
-	set_block(center, null)
-	var reach := ceili(radius / CELL_SIZE)
+	damage_block(center, amount)
+	var reach := ceili(splash_radius / CELL_SIZE)
 	for x in range(center.x - reach, center.x + reach + 1):
 		for y in range(center.y - reach, center.y + reach + 1):
 			var cell := Vector2i(x, y)
-			if to_global(map_to_local(cell)).distance_to(world_point) <= radius:
-				set_block(cell, null)
+			if cell != center and to_global(map_to_local(cell)).distance_to(world_point) <= splash_radius:
+				damage_block(cell, amount)
+
+
+func _draw_cracks() -> void:
+	var size := Vector2(CELL_SIZE, CELL_SIZE)
+	for cell: Vector2i in _damage:
+		var block := get_block(cell)
+		if not block:
+			continue
+		var ratio: float = _damage[cell] / block.durability
+		_cracks.draw_rect(Rect2(map_to_local(cell) - size / 2, size), Color(0, 0, 0, 0.15 + 0.5 * ratio))
 
 
 func _place(cell: Vector2i, block: Block) -> void:
@@ -142,6 +175,8 @@ func _load_chunk(chunk: Vector2i) -> void:
 				_place(cell, block)
 			solid_above = solid
 	_loaded[chunk] = true
+	if not _damage.is_empty():
+		_cracks.queue_redraw()
 
 
 func _unload_chunk(chunk: Vector2i) -> void:
@@ -150,6 +185,8 @@ func _unload_chunk(chunk: Vector2i) -> void:
 		for y in range(origin.y, origin.y + CHUNK_SIZE):
 			erase_cell(Vector2i(x, y))
 	_loaded.erase(chunk)
+	if not _damage.is_empty():
+		_cracks.queue_redraw()
 
 
 func _is_solid(x: int, y: int, surface: int) -> bool:
