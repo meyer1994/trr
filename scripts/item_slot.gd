@@ -9,9 +9,11 @@ const SELECTED_BORDER_COLOR := Color(1, 0.85, 0.2)
 var _style := StyleBoxFlat.new()
 var _icon := ColorRect.new()
 var _label := Label.new()
+var _caption_only_when_empty := false
 
 
-func _init(caption := "") -> void:
+func _init(caption := "", caption_only_when_empty := false) -> void:
+	_caption_only_when_empty = caption_only_when_empty
 	custom_minimum_size = SIZE
 	mouse_filter = MOUSE_FILTER_IGNORE
 	_style.bg_color = BACKGROUND_COLOR
@@ -31,6 +33,7 @@ func _init(caption := "") -> void:
 
 func set_item(item: Item) -> void:
 	_icon.visible = item != null
+	_label.visible = item == null or not _caption_only_when_empty
 	if item:
 		_icon.color = item.icon_color
 		_icon.size = item.icon_size

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Equippable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/equippable.gd" id="1_equippable"]
+
+[resource]
+script = ExtResource("1_equippable")
+kind = 0
+defense = 2
+display_name = "Iron Helmet"
+icon_color = Color(0.7, 0.72, 0.76, 1)
+icon_size = Vector2(20, 14)

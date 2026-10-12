@@ -14,12 +14,19 @@ const COYOTE_TIME := 0.1
 @onready var spawn_position := position
 @onready var health: Health = $Health
 @onready var camera: Camera2D = $Camera2D
+@onready var equipment: Equipment = $Equipment
 var fire_cooldown := 0.0
 var coyote_timer := 0.0
 
 
 func _ready() -> void:
 	health.died.connect(respawn)
+	equipment.changed.connect(_apply_equipment)
+	_apply_equipment()
+
+
+func _apply_equipment() -> void:
+	health.defense = equipment.total_defense()
 
 
 func _physics_process(delta: float) -> void:
@@ -34,7 +41,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y = JUMP_VELOCITY
 		coyote_timer = 0.0
 
-	velocity.x = Input.get_axis("move_left", "move_right") * SPEED
+	velocity.x = Input.get_axis("move_left", "move_right") * SPEED * equipment.speed_multiplier()
 
 	fire_cooldown = maxf(fire_cooldown - delta, 0.0)
 	var weapon := hotbar.selected_item as Weapon if hotbar else null
