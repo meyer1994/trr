@@ -7,6 +7,7 @@ const SPAWN_HEIGHT := 32.0
 
 @onready var map: Map = $Map
 @onready var player: Player = $Player
+@onready var chests: Chests = $Chests
 @onready var info_label: Label = $UI/InfoLabel
 var world_seed := 0
 
@@ -29,6 +30,7 @@ func _process(_delta: float) -> void:
 
 func regenerate() -> void:
 	world_seed = fixed_seed if fixed_seed != 0 else randi()
+	chests.reset(world_seed)
 	map.generate(world_seed)
 	player.spawn_position = map.get_surface_position(0) - Vector2(0, SPAWN_HEIGHT)
 	map.stream_around(player.spawn_position, true)

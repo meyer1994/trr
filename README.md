@@ -4,7 +4,7 @@ A small Terraria-like 2D game made with Godot 4.
 
 ## Inventory, equipment and effects
 
-The player owns an `Inventory` of `ItemStack`s, the copies of items it carries. The first inventory row is the hotbar, and the player holds one of those slots (keys `1`–`0`). Wearing an equippable (right mouse button on the held slot) moves its stack from the inventory into `Equipment`, and whatever it replaces takes its inventory slot. Clicking a worn piece in the equipment panel moves it back to the first free inventory slot.
+The player owns a 40-slot inventory, an `ItemContainer` of `ItemStack`s, the copies of items it carries. The first inventory row is the hotbar; `Esc` or `I` shows the other three rows, and the player holds one of those slots (keys `1`–`0`). Wearing an equippable (right mouse button on the held slot) moves its stack from the inventory into `Equipment`, and whatever it replaces takes its inventory slot. Clicking a worn piece in the equipment panel moves it back to the first free inventory slot.
 
 Effects are built around two contracts. GDScript has no interfaces, so they are duck-typed methods:
 
@@ -60,11 +60,12 @@ classDiagram
         item: Item
         count
     }
-    class Inventory {
+    class ItemContainer {
         slots: Array~ItemStack~
         add(stack) bool
         take(index) ItemStack
         put(index, stack)
+        move_to(index, other)
         changed()
     }
     class Equipment {
@@ -99,11 +100,11 @@ classDiagram
     Weapon <|-- Launcher
     Item o-- Effect : effects
     ItemStack --> Item
-    Inventory o-- ItemStack : carries
+    ItemContainer o-- ItemStack : carries
     Equipment o-- ItemStack : wears
     EffectSet o-- Effect : grouped by target
     EffectSet ..> Stats : resolves
-    Player *-- Inventory
+    Player *-- ItemContainer : inventory
     Player *-- Equipment
     Player ..> Projectile : fires with held_stats
 ```
@@ -132,3 +133,22 @@ flowchart LR
 - **Resolving**: final values are `(base + flat) * (1 + percent)`. The player resolves each worn piece's defense first, sums it into its own base, then resolves its `PLAYER` stats and the held weapon's `HELD` stats. Each projectile keeps the held stats from the moment it was fired.
 - **Validation**: an effect whose stat isn't listed for its target is ignored with a warning, once per effect. A valid effect whose target lacks the stat right now (a damage bonus while holding boots) is skipped silently.
 - **When**: the player rebuilds its `EffectSet` whenever the inventory, equipment or held slot changes. Equipment effects apply only while worn, never while merely held; other items' effects apply only while held.
+
+## Chests
+
+Chests are placed while the world streams in, so the same seed always gives the same chests with the same loot.
+
+```mermaid
+flowchart LR
+    Load["Map.chunk_loaded"] --> Pick["seed + chunk: maybe a chest on a free floor cell"]
+    Pick --> Band{"Depth band"}
+    Band -->|"above the surface"| Surface["loot/surface.tres"]
+    Band -->|"below the surface"| Caves["loot/caves.tres"]
+    Band -->|"on a floating island"| Islands["loot/islands.tres"]
+    Surface & Caves & Islands -->|"first open: roll with seed + cell"| Contents["ItemContainer (20 slots)"]
+    Contents -->|"kept while the chunk is unloaded"| Contents
+```
+
+- **Placement**: `Chests` listens to the map's chunk signals. Each chunk has a 30% chance of a chest on an empty generated cell with solid ground under it. The block under a chest is protected from damage.
+- **Loot**: a `LootTable` lists weighted `LootEntry`s and how many items to roll. Contents are rolled the first time a chest is opened and remembered from then on, like dug blocks.
+- **Using a chest**: right-click a chest within reach (5 tiles) to open it; right-clicking anywhere else still wears the held item. The inventory grid and the chest's slots appear under the hotbar. Clicking an inventory or hotbar slot stores that stack in the chest; clicking a chest slot takes it. A chest closes when right-clicked again, when the inventory is closed, or when you walk away.

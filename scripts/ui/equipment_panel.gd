@@ -22,18 +22,12 @@ func _ready() -> void:
 	add_child(_defense_label)
 	for index in Equipment.SLOT_KINDS.size():
 		var slot := ItemSlot.new(KIND_CAPTIONS[Equipment.SLOT_KINDS[index]], true)
-		slot.mouse_filter = MOUSE_FILTER_STOP
-		slot.gui_input.connect(_on_slot_input.bind(index))
+		slot.set_clickable(true)
+		slot.pressed.connect(player.take_off.bind(index))
 		_slots.append(slot)
 		add_child(slot)
 	player.stats_changed.connect(_refresh)
 	_refresh()
-
-
-func _on_slot_input(event: InputEvent, index: int) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		player.take_off(index)
-		accept_event()
 
 
 func _refresh() -> void:

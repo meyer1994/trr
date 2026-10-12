@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://scripts/chests/loot_table.gd" id="1_table"]
+[ext_resource type="Script" path="res://scripts/chests/loot_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://items/rifle.tres" id="item_rifle"]
+[ext_resource type="Resource" path="res://items/launcher.tres" id="item_launcher"]
+[ext_resource type="Resource" path="res://equipment/iron_chainmail.tres" id="item_iron_chainmail"]
+[ext_resource type="Resource" path="res://equipment/gold_helmet.tres" id="item_gold_helmet"]
+[ext_resource type="Resource" path="res://equipment/scope.tres" id="item_scope"]
+[ext_resource type="Resource" path="res://equipment/gunpowder_charm.tres" id="item_gunpowder_charm"]
+
+[sub_resource type="Resource" id="Entry_rifle"]
+script = ExtResource("2_entry")
+item = ExtResource("item_rifle")
+weight = 2.0
+
+[sub_resource type="Resource" id="Entry_launcher"]
+script = ExtResource("2_entry")
+item = ExtResource("item_launcher")
+weight = 1.0
+
+[sub_resource type="Resource" id="Entry_iron_chainmail"]
+script = ExtResource("2_entry")
+item = ExtResource("item_iron_chainmail")
+weight = 2.0
+
+[sub_resource type="Resource" id="Entry_gold_helmet"]
+script = ExtResource("2_entry")
+item = ExtResource("item_gold_helmet")
+weight = 2.0
+
+[sub_resource type="Resource" id="Entry_scope"]
+script = ExtResource("2_entry")
+item = ExtResource("item_scope")
+weight = 2.0
+
+[sub_resource type="Resource" id="Entry_gunpowder_charm"]
+script = ExtResource("2_entry")
+item = ExtResource("item_gunpowder_charm")
+weight = 1.0
+
+[resource]
+script = ExtResource("1_table")
+entries = Array[ExtResource("2_entry")]([SubResource("Entry_rifle"), SubResource("Entry_launcher"), SubResource("Entry_iron_chainmail"), SubResource("Entry_gold_helmet"), SubResource("Entry_scope"), SubResource("Entry_gunpowder_charm")])
+rolls = Vector2i(2, 4)

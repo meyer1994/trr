@@ -1,6 +1,9 @@
 class_name ItemSlot
 extends Panel
 
+## Emitted on left click, once the slot is clickable.
+signal pressed
+
 const SIZE := Vector2(40, 40)
 const BACKGROUND_COLOR := Color(0, 0, 0, 0.5)
 const BORDER_COLOR := Color(1, 1, 1, 0.25)
@@ -55,3 +58,14 @@ func set_stack(stack: ItemStack) -> void:
 
 func set_selected(selected: bool) -> void:
 	_style.border_color = SELECTED_BORDER_COLOR if selected else BORDER_COLOR
+
+
+## Clickable slots also stop clicks from reaching the world, so they don't fire shots.
+func set_clickable(clickable: bool) -> void:
+	mouse_filter = MOUSE_FILTER_STOP if clickable else MOUSE_FILTER_IGNORE
+
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		pressed.emit()
+		accept_event()

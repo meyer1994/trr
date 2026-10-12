@@ -14,14 +14,20 @@ const COYOTE_TIME := 0.1
 const HAND_POSITION := Vector2(0, 2)
 ## How far from the hand, along the aim, the held item's grip sits.
 const HOLD_DISTANCE := 8.0
+const INVENTORY_SIZE := 40
+## The first inventory slots double as the hotbar.
+const HOTBAR_SIZE := 10
 const HOTBAR_KEYS: Array[Key] = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
+
+## Fills the inventory from its first slot.
+@export var starting_items: Array[Item] = []
 
 @onready var spawn_position := position
 @onready var health: Health = $Health
 @onready var camera: Camera2D = $Camera2D
-@onready var inventory: Inventory = $Inventory
 @onready var equipment: Equipment = $Equipment
 @onready var held_sprite: Sprite2D = $HeldSprite
+var inventory := ItemContainer.new(INVENTORY_SIZE)
 var fire_cooldown := 0.0
 var coyote_timer := 0.0
 ## Inventory slot of the held item; always within the hotbar.
@@ -34,6 +40,9 @@ var held_stats: Stats
 
 
 func _ready() -> void:
+	for index in mini(starting_items.size(), INVENTORY_SIZE):
+		if starting_items[index]:
+			inventory.slots[index] = ItemStack.new(starting_items[index])
 	health.died.connect(respawn)
 	inventory.changed.connect(_refresh_effects)
 	equipment.changed.connect(_refresh_effects)
