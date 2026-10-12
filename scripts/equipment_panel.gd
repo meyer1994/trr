@@ -29,4 +29,5 @@ func _ready() -> void:
 func _refresh() -> void:
 	for index in _slots.size():
 		_slots[index].set_item(equipment.slots[index])
-	_defense_label.text = "Defense: %d" % equipment.total_defense()
+	var defense := EffectSet.from_items(equipment.slots).apply(Effect.Stat.DEFENSE, 0.0)
+	_defense_label.text = "Defense: %d" % roundi(defense)

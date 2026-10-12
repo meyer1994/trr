@@ -42,22 +42,6 @@ func unequip(index: int) -> Equippable:
 	return previous
 
 
-func total_defense() -> int:
-	var total := 0
-	for item in slots:
-		if item:
-			total += item.defense
-	return total
-
-
-func speed_multiplier() -> float:
-	var multiplier := 1.0
-	for item in slots:
-		if item:
-			multiplier += item.speed_bonus
-	return multiplier
-
-
 func _slot_for(kind: Equippable.Kind) -> int:
 	var occupied := -1
 	for index in SLOT_KINDS.size():

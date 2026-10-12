@@ -1,6 +1,8 @@
 class_name Hotbar
 extends HBoxContainer
 
+signal selection_changed
+
 const SLOT_COUNT := 10
 const SLOT_KEYS: Array[Key] = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
 
@@ -31,6 +33,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if index != -1:
 		selected_index = index
 		_refresh_selection()
+		selection_changed.emit()
 		get_viewport().set_input_as_handled()
 
 

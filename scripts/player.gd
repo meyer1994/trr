@@ -17,16 +17,25 @@ const COYOTE_TIME := 0.1
 @onready var equipment: Equipment = $Equipment
 var fire_cooldown := 0.0
 var coyote_timer := 0.0
+## Combined effects of worn equipment and the held item.
+var effects := EffectSet.new()
 
 
 func _ready() -> void:
 	health.died.connect(respawn)
-	equipment.changed.connect(_apply_equipment)
-	_apply_equipment()
+	equipment.changed.connect(_refresh_effects)
+	if hotbar:
+		hotbar.selection_changed.connect(_refresh_effects)
+	_refresh_effects()
 
 
-func _apply_equipment() -> void:
-	health.defense = equipment.total_defense()
+func _refresh_effects() -> void:
+	var sources: Array[Item] = []
+	sources.append_array(equipment.slots)
+	if hotbar:
+		sources.append(hotbar.selected_item)
+	effects = EffectSet.from_items(sources)
+	health.defense = roundi(effects.apply(Effect.Stat.DEFENSE, 0.0))
 
 
 func _physics_process(delta: float) -> void:
@@ -41,13 +50,14 @@ func _physics_process(delta: float) -> void:
 		velocity.y = JUMP_VELOCITY
 		coyote_timer = 0.0
 
-	velocity.x = Input.get_axis("move_left", "move_right") * SPEED * equipment.speed_multiplier()
+	var speed := effects.apply(Effect.Stat.MOVE_SPEED, SPEED)
+	velocity.x = Input.get_axis("move_left", "move_right") * speed
 
 	fire_cooldown = maxf(fire_cooldown - delta, 0.0)
 	var weapon := hotbar.selected_item as Weapon if hotbar else null
 	if weapon and fire_cooldown == 0.0 and _is_trigger_pulled(weapon):
 		_shoot(weapon)
-		fire_cooldown = weapon.fire_interval
+		fire_cooldown = 1.0 / effects.apply(Effect.Stat.FIRE_RATE, 1.0 / weapon.fire_interval)
 
 	_step_up_ledge(delta)
 	move_and_slide()
@@ -95,8 +105,8 @@ func _shoot(weapon: Weapon) -> void:
 
 	var projectile := PROJECTILE_SCENE.instantiate()
 	projectile.weapon = weapon
-	projectile.velocity = aim * weapon.projectile_speed
-	projectile.damage = weapon.damage
-	projectile.splash_radius = weapon.splash_radius
+	projectile.velocity = aim * effects.apply(Effect.Stat.PROJECTILE_SPEED, weapon.projectile_speed)
+	projectile.damage = effects.apply(Effect.Stat.DAMAGE, weapon.damage)
+	projectile.splash_radius = effects.apply(Effect.Stat.SPLASH_RADIUS, weapon.splash_radius)
 	projectile.position = position + aim * PROJECTILE_SPAWN_OFFSET
 	get_parent().add_child(projectile)

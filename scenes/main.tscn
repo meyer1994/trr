@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/map.gd" id="2_map"]
@@ -17,6 +17,7 @@
 [ext_resource type="Resource" path="res://equipment/iron_greaves.tres" id="15_iron_greaves"]
 [ext_resource type="Resource" path="res://equipment/running_boots.tres" id="16_running_boots"]
 [ext_resource type="Script" path="res://scripts/equipment_panel.gd" id="17_equipment_panel"]
+[ext_resource type="Resource" path="res://equipment/gunpowder_charm.tres" id="18_gunpowder_charm"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(20, 42)
@@ -54,7 +55,7 @@ health = NodePath("../Health")
 
 [node name="Equipment" type="Node" parent="Player"]
 script = ExtResource("11_equipment")
-starting_items = Array[ExtResource("12_equippable")]([ExtResource("13_iron_helmet"), ExtResource("14_iron_chainmail"), ExtResource("15_iron_greaves"), ExtResource("16_running_boots")])
+starting_items = Array[ExtResource("12_equippable")]([ExtResource("13_iron_helmet"), ExtResource("14_iron_chainmail"), ExtResource("15_iron_greaves"), ExtResource("16_running_boots"), ExtResource("18_gunpowder_charm")])
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
 position_smoothing_enabled = true
