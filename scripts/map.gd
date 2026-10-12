@@ -1,6 +1,9 @@
 class_name Map
 extends TileMapLayer
 
+signal chunk_loaded(chunk: Vector2i)
+signal chunk_unloaded(chunk: Vector2i)
+
 const CELL_SIZE := 16
 const SOURCE_ID := 0
 
@@ -32,6 +35,8 @@ var _atlas_column := {}
 ## Damage taken so far by blocks that haven't broken yet.
 var _damage := {}
 var _cracks := Node2D.new()
+## Cells that can't be damaged, such as the blocks chests stand on.
+var protected_cells := {}
 
 
 func _ready() -> void:
@@ -109,7 +114,7 @@ func set_block(cell: Vector2i, block: Block) -> void:
 ## Damages the block in a cell and breaks it once the damage reaches its durability.
 func damage_block(cell: Vector2i, amount: float) -> void:
 	var block := get_block(cell)
-	if not block:
+	if not block or protected_cells.has(cell):
 		return
 	var total: float = _damage.get(cell, 0.0) + amount
 	if total >= block.durability:
@@ -177,6 +182,7 @@ func _load_chunk(chunk: Vector2i) -> void:
 	_loaded[chunk] = true
 	if not _damage.is_empty():
 		_cracks.queue_redraw()
+	chunk_loaded.emit(chunk)
 
 
 func _unload_chunk(chunk: Vector2i) -> void:
@@ -187,6 +193,7 @@ func _unload_chunk(chunk: Vector2i) -> void:
 	_loaded.erase(chunk)
 	if not _damage.is_empty():
 		_cracks.queue_redraw()
+	chunk_unloaded.emit(chunk)
 
 
 func _is_solid(x: int, y: int, surface: int) -> bool:
