@@ -11,6 +11,9 @@ const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
 const PROJECTILE_SPAWN_OFFSET := 16.0
 const STEP_HEIGHT := float(Map.CELL_SIZE)
 const COYOTE_TIME := 0.1
+const HAND_POSITION := Vector2(0, 2)
+## How far from the hand, along the aim, the held item's grip sits.
+const HOLD_DISTANCE := 8.0
 const HOTBAR_KEYS: Array[Key] = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
 
 @onready var spawn_position := position
@@ -18,6 +21,7 @@ const HOTBAR_KEYS: Array[Key] = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7
 @onready var camera: Camera2D = $Camera2D
 @onready var inventory: Inventory = $Inventory
 @onready var equipment: Equipment = $Equipment
+@onready var held_sprite: Sprite2D = $HeldSprite
 var fire_cooldown := 0.0
 var coyote_timer := 0.0
 ## Inventory slot of the held item; always within the hotbar.
@@ -33,7 +37,25 @@ func _ready() -> void:
 	health.died.connect(respawn)
 	inventory.changed.connect(_refresh_effects)
 	equipment.changed.connect(_refresh_effects)
+	inventory.changed.connect(_refresh_held_sprite)
+	held_changed.connect(_refresh_held_sprite)
 	_refresh_effects()
+	_refresh_held_sprite()
+
+
+func _process(_delta: float) -> void:
+	var stack := held_stack()
+	if not stack or not held_sprite.texture:
+		return
+	var aim := _aim_direction()
+	var aiming_left := aim.x < 0.0
+	var grip := stack.item.held_grip
+	if aiming_left:
+		grip.y = held_sprite.texture.get_height() - grip.y
+	held_sprite.position = HAND_POSITION + aim * HOLD_DISTANCE
+	held_sprite.rotation = aim.angle()
+	held_sprite.flip_v = aiming_left
+	held_sprite.offset = -grip
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -101,6 +123,11 @@ func _refresh_effects() -> void:
 	stats_changed.emit()
 
 
+func _refresh_held_sprite() -> void:
+	var stack := held_stack()
+	held_sprite.texture = stack.item.held_texture if stack else null
+
+
 func _physics_process(delta: float) -> void:
 	if is_on_floor():
 		coyote_timer = COYOTE_TIME
@@ -160,14 +187,24 @@ func _is_trigger_pulled(weapon: Weapon) -> bool:
 	return Input.is_action_just_pressed("shoot")
 
 
-func _shoot(weapon: Weapon) -> void:
+func _aim_direction() -> Vector2:
 	var aim := global_position.direction_to(get_global_mouse_position())
-	if aim == Vector2.ZERO:
-		aim = Vector2.RIGHT
+	return aim if aim != Vector2.ZERO else Vector2.RIGHT
 
+
+## Shots leave from the tip of the held sprite, or a fixed distance away without one.
+func _muzzle_position(aim: Vector2) -> Vector2:
+	if not held_sprite.texture:
+		return position + aim * PROJECTILE_SPAWN_OFFSET
+	var reach := held_sprite.texture.get_width() - held_stack().item.held_grip.x
+	return position + held_sprite.position + aim * reach
+
+
+func _shoot(weapon: Weapon) -> void:
+	var aim := _aim_direction()
 	var projectile := PROJECTILE_SCENE.instantiate()
 	projectile.weapon = weapon
 	projectile.direction = aim
 	projectile.stats = held_stats
-	projectile.position = position + aim * PROJECTILE_SPAWN_OFFSET
+	projectile.position = _muzzle_position(aim)
 	get_parent().add_child(projectile)
