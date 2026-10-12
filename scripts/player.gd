@@ -6,6 +6,7 @@ const JUMP_VELOCITY := -450.0
 const FALL_LIMIT_Y := 1000.0
 const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
 const PROJECTILE_SPAWN_OFFSET := 16.0
+const STEP_HEIGHT := float(Map.CELL_SIZE)
 
 @export var hotbar: Hotbar
 
@@ -33,10 +34,31 @@ func _physics_process(delta: float) -> void:
 		_shoot(weapon)
 		fire_cooldown = weapon.fire_interval
 
+	_step_up_ledge(delta)
 	move_and_slide()
 
 	if position.y > FALL_LIMIT_Y:
 		respawn()
+
+
+func _step_up_ledge(delta: float) -> void:
+	if not is_on_floor() or velocity.x == 0.0:
+		return
+	var motion := Vector2(velocity.x * delta, 0)
+	var lift := Vector2(0, -STEP_HEIGHT)
+	if not _hits_wall(global_transform, motion):
+		return
+	if test_move(global_transform, lift):
+		return
+	if _hits_wall(global_transform.translated(lift), motion):
+		return
+	global_position += lift
+
+
+# Resting contact with the floor also counts as a collision, so only wall-facing normals block.
+func _hits_wall(from: Transform2D, motion: Vector2) -> bool:
+	var collision := KinematicCollision2D.new()
+	return test_move(from, motion, collision) and absf(collision.get_normal().x) > 0.7
 
 
 func respawn() -> void:
