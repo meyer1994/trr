@@ -1,4 +1,4 @@
-.PHONY: build run play clean install-godot check-godot
+.PHONY: build run play clean sprites install-godot check-godot
 
 build: check-godot
 	mkdir -p build/web
@@ -14,6 +14,11 @@ play:
 
 clean:
 	rm -rf build
+
+# Rewrites the item PNGs from the pixel grids in tools/make_sprites.gd.
+sprites: check-godot
+	.bin/godot --headless --path . --script res://tools/make_sprites.gd
+	.bin/godot --headless --import
 
 # ._sc_ puts Godot in self-contained mode, so its settings and export templates stay in .bin/.
 install-godot:
