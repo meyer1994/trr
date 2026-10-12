@@ -7,12 +7,14 @@ const FALL_LIMIT_Y := 1000.0
 const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
 const PROJECTILE_SPAWN_OFFSET := 16.0
 const STEP_HEIGHT := float(Map.CELL_SIZE)
+const COYOTE_TIME := 0.1
 
 @export var hotbar: Hotbar
 
 @onready var spawn_position := position
 @onready var health: Health = $Health
 var fire_cooldown := 0.0
+var coyote_timer := 0.0
 
 
 func _ready() -> void:
@@ -20,11 +22,15 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if not is_on_floor():
+	if is_on_floor():
+		coyote_timer = COYOTE_TIME
+	else:
 		velocity += get_gravity() * delta
+		coyote_timer = maxf(coyote_timer - delta, 0.0)
 
-	if Input.is_action_just_pressed("jump") and is_on_floor():
+	if Input.is_action_just_pressed("jump") and coyote_timer > 0.0:
 		velocity.y = JUMP_VELOCITY
+		coyote_timer = 0.0
 
 	velocity.x = Input.get_axis("move_left", "move_right") * SPEED
 
