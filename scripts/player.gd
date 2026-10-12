@@ -9,7 +9,12 @@ const PROJECTILE_SPAWN_OFFSET := 12.0
 @export var hotbar: Hotbar
 
 @onready var spawn_position := position
+@onready var health: Health = $Health
 var fire_cooldown := 0.0
+
+
+func _ready() -> void:
+	health.died.connect(_respawn)
 
 
 func _physics_process(delta: float) -> void:
@@ -30,8 +35,13 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	if position.y > FALL_LIMIT_Y:
-		position = spawn_position
-		velocity = Vector2.ZERO
+		_respawn()
+
+
+func _respawn() -> void:
+	position = spawn_position
+	velocity = Vector2.ZERO
+	health.reset()
 
 
 func _is_trigger_pulled(weapon: Weapon) -> bool:
