@@ -13,6 +13,7 @@ const COYOTE_TIME := 0.1
 
 @onready var spawn_position := position
 @onready var health: Health = $Health
+@onready var camera: Camera2D = $Camera2D
 var fire_cooldown := 0.0
 var coyote_timer := 0.0
 
@@ -71,6 +72,7 @@ func respawn() -> void:
 	position = spawn_position
 	velocity = Vector2.ZERO
 	health.reset()
+	camera.reset_smoothing()
 
 
 func _is_trigger_pulled(weapon: Weapon) -> bool:
