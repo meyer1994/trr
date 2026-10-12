@@ -22,12 +22,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: .bin
-          key: godot-${{ hashFiles('Makefile') }}
-      - run: test -x .bin/godot || make install-godot
-      # .godot/ isn't committed, so assets must be imported before exporting.
+      - run: make install-godot
       - run: .bin/godot --headless --import
       - run: make build
       - uses: actions/upload-pages-artifact@v3
