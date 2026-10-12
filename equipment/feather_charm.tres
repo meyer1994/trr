@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="Equippable" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equippable.gd" id="1_equippable"]
+[ext_resource type="Texture2D" path="res://equipment/feather_charm_icon.png" id="icon"]
+[ext_resource type="Texture2D" path="res://equipment/feather_charm_held.png" id="held"]
+[ext_resource type="Script" path="res://scripts/effects/effect.gd" id="2_effect"]
+
+[sub_resource type="Resource" id="Resource_gravity"]
+script = ExtResource("2_effect")
+target = 2
+stat = 5
+mode = 1
+value = -0.5
+
+[sub_resource type="Resource" id="Resource_move_speed"]
+script = ExtResource("2_effect")
+target = 0
+stat = 0
+mode = 1
+value = 0.1
+
+[resource]
+script = ExtResource("1_equippable")
+kind = 3
+display_name = "Feather Charm"
+icon = ExtResource("icon")
+icon_color = Color(0.95, 0.97, 1, 1)
+icon_size = Vector2(10, 14)
+held_texture = ExtResource("held")
+held_grip = Vector2(2, 6)
+effects = Array[ExtResource("2_effect")]([SubResource("Resource_gravity"), SubResource("Resource_move_speed")])

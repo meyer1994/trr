@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Equippable" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equippable.gd" id="1_equippable"]
+[ext_resource type="Texture2D" path="res://equipment/gold_helmet_icon.png" id="icon"]
+[ext_resource type="Texture2D" path="res://equipment/gold_helmet_held.png" id="held"]
+
+[resource]
+script = ExtResource("1_equippable")
+kind = 0
+defense = 4
+display_name = "Gold Helmet"
+icon = ExtResource("icon")
+icon_color = Color(0.95, 0.75, 0.2, 1)
+icon_size = Vector2(20, 14)
+held_texture = ExtResource("held")
+held_grip = Vector2(5, 4)
