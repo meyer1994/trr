@@ -1,18 +1,18 @@
 class_name Map
 extends TileMapLayer
 
-const CELL_SIZE := 8
+const CELL_SIZE := 16
 const SOURCE_ID := 0
 const DIRT_TILE := Vector2i(0, 0)
 const GRASS_TILE := Vector2i(1, 0)
-const MAP_SIZE_CELLS := Vector2i(144, 81)
-const SURFACE_BASE_ROW := 40
-const SURFACE_AMPLITUDE_ROWS := 14.0
-const SURFACE_FREQUENCY := 0.015
+const MAP_SIZE_CELLS := Vector2i(72, 41)
+const SURFACE_BASE_ROW := 20
+const SURFACE_AMPLITUDE_ROWS := 7.0
+const SURFACE_FREQUENCY := 0.03
 const DIRT_FILL_COLOR := Color(0.42, 0.33, 0.25)
 const DIRT_EDGE_COLOR := Color(0.32, 0.25, 0.19)
 const GRASS_FILL_COLOR := Color(0.36, 0.62, 0.26)
-const GRASS_EDGE_COLOR := Color(0.26, 0.48, 0.18)
+const GRASS_DEPTH := 5
 
 
 func _ready() -> void:
@@ -43,6 +43,7 @@ func get_surface_position(column: int) -> Vector2:
 
 func destroy_area(world_point: Vector2, radius: float) -> void:
 	var center := local_to_map(to_local(world_point))
+	erase_cell(center)
 	var reach := ceili(radius / CELL_SIZE)
 	for x in range(center.x - reach, center.x + reach + 1):
 		for y in range(center.y - reach, center.y + reach + 1):
@@ -53,8 +54,10 @@ func destroy_area(world_point: Vector2, radius: float) -> void:
 
 func _build_tile_set() -> TileSet:
 	var image := Image.create_empty(CELL_SIZE * 2, CELL_SIZE, false, Image.FORMAT_RGBA8)
-	_paint_tile(image, DIRT_TILE, DIRT_FILL_COLOR, DIRT_EDGE_COLOR)
-	_paint_tile(image, GRASS_TILE, GRASS_FILL_COLOR, GRASS_EDGE_COLOR)
+	_paint_tile(image, DIRT_TILE)
+	_paint_tile(image, GRASS_TILE)
+	var grass_origin := GRASS_TILE * CELL_SIZE + Vector2i.ONE
+	image.fill_rect(Rect2i(grass_origin, Vector2i(CELL_SIZE - 1, GRASS_DEPTH)), GRASS_FILL_COLOR)
 
 	var source := TileSetAtlasSource.new()
 	source.texture = ImageTexture.create_from_image(image)
@@ -78,7 +81,7 @@ func _build_tile_set() -> TileSet:
 	return tiles
 
 
-func _paint_tile(image: Image, tile: Vector2i, fill: Color, edge: Color) -> void:
+func _paint_tile(image: Image, tile: Vector2i) -> void:
 	var origin := tile * CELL_SIZE
-	image.fill_rect(Rect2i(origin, Vector2i(CELL_SIZE, CELL_SIZE)), edge)
-	image.fill_rect(Rect2i(origin + Vector2i.ONE, Vector2i(CELL_SIZE - 1, CELL_SIZE - 1)), fill)
+	image.fill_rect(Rect2i(origin, Vector2i(CELL_SIZE, CELL_SIZE)), DIRT_EDGE_COLOR)
+	image.fill_rect(Rect2i(origin + Vector2i.ONE, Vector2i(CELL_SIZE - 1, CELL_SIZE - 1)), DIRT_FILL_COLOR)

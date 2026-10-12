@@ -1,6 +1,6 @@
 extends Node2D
 
-const SPAWN_HEIGHT := 16.0
+const SPAWN_HEIGHT := 32.0
 
 @onready var map: Map = $Map
 @onready var player: Player = $Player

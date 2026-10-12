@@ -1,11 +1,11 @@
 class_name Player
 extends CharacterBody2D
 
-const SPEED := 300.0
-const JUMP_VELOCITY := -550.0
+const SPEED := 200.0
+const JUMP_VELOCITY := -450.0
 const FALL_LIMIT_Y := 1000.0
 const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
-const PROJECTILE_SPAWN_OFFSET := 12.0
+const PROJECTILE_SPAWN_OFFSET := 16.0
 
 @export var hotbar: Hotbar
 

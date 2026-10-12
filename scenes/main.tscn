@@ -12,7 +12,7 @@
 [ext_resource type="Script" path="res://scripts/world.gd" id="10_world"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
-size = Vector2(13.6, 13.6)
+size = Vector2(20, 42)
 
 [node name="Main" type="Node2D"]
 script = ExtResource("10_world")
@@ -31,17 +31,17 @@ hotbar = NodePath("../UI/Hotbar")
 shape = SubResource("RectangleShape2D_player")
 
 [node name="ColorRect" type="ColorRect" parent="Player"]
-offset_left = -6.8
-offset_top = -6.8
-offset_right = 6.8
-offset_bottom = 6.8
+offset_left = -10.0
+offset_top = -21.0
+offset_right = 10.0
+offset_bottom = 21.0
 color = Color(0.95, 0.55, 0.2, 1)
 
 [node name="Health" type="Node" parent="Player"]
 script = ExtResource("8_health")
 
 [node name="HealthBar" type="Node2D" parent="Player" node_paths=PackedStringArray("health")]
-position = Vector2(0, 11)
+position = Vector2(0, 26)
 script = ExtResource("9_health_bar")
 health = NodePath("../Health")
 

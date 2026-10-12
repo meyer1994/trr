@@ -33,5 +33,5 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if hit.collider.has_method("destroy_area"):
-		hit.collider.destroy_area(hit.position, weapon.blast_radius)
+		hit.collider.destroy_area(hit.position - hit.normal, weapon.blast_radius)
 	queue_free()
