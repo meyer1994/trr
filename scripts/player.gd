@@ -4,7 +4,7 @@ const SPEED := 300.0
 const JUMP_VELOCITY := -550.0
 const FALL_LIMIT_Y := 1000.0
 const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
-const PROJECTILE_SPAWN_OFFSET := 24.0
+const PROJECTILE_SPAWN_OFFSET := 12.0
 
 @onready var spawn_position := position
 

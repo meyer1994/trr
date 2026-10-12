@@ -6,7 +6,7 @@
 size = Vector2(800, 32)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
-size = Vector2(32, 32)
+size = Vector2(13.6, 13.6)
 
 [node name="Main" type="Node2D"]
 
@@ -32,8 +32,8 @@ script = ExtResource("1_player")
 shape = SubResource("RectangleShape2D_player")
 
 [node name="ColorRect" type="ColorRect" parent="Player"]
-offset_left = -16.0
-offset_top = -16.0
-offset_right = 16.0
-offset_bottom = 16.0
+offset_left = -6.8
+offset_top = -6.8
+offset_right = 6.8
+offset_bottom = 6.8
 color = Color(0.95, 0.55, 0.2, 1)
