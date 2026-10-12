@@ -3,7 +3,7 @@ extends CharacterBody2D
 
 const SPEED := 200.0
 const JUMP_VELOCITY := -450.0
-const FALL_LIMIT_Y := 1000.0
+const MAX_FALL_SPEED := 1000.0
 const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
 const PROJECTILE_SPAWN_OFFSET := 16.0
 const STEP_HEIGHT := float(Map.CELL_SIZE)
@@ -27,6 +27,7 @@ func _physics_process(delta: float) -> void:
 		coyote_timer = COYOTE_TIME
 	else:
 		velocity += get_gravity() * delta
+		velocity.y = minf(velocity.y, MAX_FALL_SPEED)
 		coyote_timer = maxf(coyote_timer - delta, 0.0)
 
 	if Input.is_action_just_pressed("jump") and coyote_timer > 0.0:
@@ -43,9 +44,6 @@ func _physics_process(delta: float) -> void:
 
 	_step_up_ledge(delta)
 	move_and_slide()
-
-	if position.y > FALL_LIMIT_Y:
-		respawn()
 
 
 func _step_up_ledge(delta: float) -> void:
