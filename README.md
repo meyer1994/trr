@@ -50,6 +50,7 @@ classDiagram
         splash_radius
         projectile_speed
         projectile_gravity
+        projectile_drag
     }
     class Equippable {
         kind: Kind

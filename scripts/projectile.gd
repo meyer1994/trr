@@ -1,6 +1,6 @@
 extends Node2D
 
-const LIFETIME := 2.0
+const LIFETIME := 3.0
 const WORLD_COLLISION_MASK := 1
 
 var weapon: Weapon
@@ -23,6 +23,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	velocity.y += stats.value(Effect.Stat.GRAVITY) * delta
+	velocity *= exp(-weapon.projectile_drag * delta)
 	rotation = velocity.angle()
 
 	# Ray-cast each step so fast shots can't skip over thin walls between frames.

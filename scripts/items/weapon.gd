@@ -10,6 +10,9 @@ extends Item
 @export var projectile_size := Vector2(12, 6)
 @export var projectile_speed := 700.0
 @export var projectile_gravity := 0.0
+## Fraction of its velocity a shot loses to the air each second. As it slows, gravity takes over
+## and the path bends from a gentle arc into a near-vertical fall.
+@export var projectile_drag := 0.0
 
 
 ## Held stats, including the ones each projectile it fires inherits.

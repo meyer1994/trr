@@ -9,4 +9,6 @@ func _init() -> void:
 	splash_radius = 0.0
 	projectile_size = Vector2(10, 3)
 	projectile_speed = 1100.0
+	projectile_gravity = 100.0
+	projectile_drag = 0.3
 	icon_size = Vector2(30, 6)
