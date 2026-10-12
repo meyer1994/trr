@@ -23,6 +23,7 @@ sprites: check-godot
 # ._sc_ puts Godot in self-contained mode, so its settings and export templates stay in .bin/.
 install-godot:
 	mkdir -p .bin
+	touch .bin/._sc_
 	mkdir -p .bin/editor_data/export_templates/4.7.2.stable
 	# download
 	curl -fL -o .bin/godot.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
