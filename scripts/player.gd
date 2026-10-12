@@ -5,8 +5,10 @@ const JUMP_VELOCITY := -550.0
 const FALL_LIMIT_Y := 1000.0
 const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
 const PROJECTILE_SPAWN_OFFSET := 12.0
+const FIRE_INTERVAL := 0.1
 
 @onready var spawn_position := position
+var fire_cooldown := 0.0
 
 
 func _physics_process(delta: float) -> void:
@@ -18,8 +20,10 @@ func _physics_process(delta: float) -> void:
 
 	velocity.x = Input.get_axis("move_left", "move_right") * SPEED
 
-	if Input.is_action_just_pressed("shoot"):
+	fire_cooldown = maxf(fire_cooldown - delta, 0.0)
+	if Input.is_action_pressed("shoot") and fire_cooldown == 0.0:
 		_shoot()
+		fire_cooldown = FIRE_INTERVAL
 
 	move_and_slide()
 
