@@ -22,8 +22,8 @@ func _physics_process(_delta: float) -> void:
 func _process(_delta: float) -> void:
 	var position_px := Vector2i(player.global_position.round())
 	var cell := map.local_to_map(map.to_local(player.global_position))
-	info_label.text = "Seed: %d\nPosition: %d, %d\nTile: %d, %d" % [
-		world_seed, position_px.x, position_px.y, cell.x, cell.y,
+	info_label.text = "FPS: %d\nSeed: %d\nPosition: %d, %d\nTile: %d, %d" % [
+		Engine.get_frames_per_second(), world_seed, position_px.x, position_px.y, cell.x, cell.y,
 	]
 
 
