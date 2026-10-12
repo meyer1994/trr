@@ -72,7 +72,7 @@ theme_override_constants/separation = 4
 script = ExtResource("3_hotbar")
 items = Array[ExtResource("4_item")]([ExtResource("5_pistol"), ExtResource("6_rifle"), ExtResource("7_launcher")])
 
-[node name="EquipmentPanel" type="VBoxContainer" parent="UI" node_paths=PackedStringArray("equipment")]
+[node name="EquipmentPanel" type="VBoxContainer" parent="UI" node_paths=PackedStringArray("player")]
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -84,7 +84,7 @@ grow_vertical = 0
 theme_override_constants/separation = 4
 alignment = 2
 script = ExtResource("17_equipment_panel")
-equipment = NodePath("../../Player/Equipment")
+player = NodePath("../../Player")
 
 [node name="ResetButton" type="Button" parent="UI"]
 anchors_preset = 1

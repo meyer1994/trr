@@ -6,3 +6,7 @@ extends Resource
 @export var icon_size := Vector2(16, 16)
 ## Applied to the player while the item is worn or held.
 @export var effects: Array[Effect] = []
+
+
+func get_effects() -> Array[Effect]:
+	return effects

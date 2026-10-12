@@ -1,6 +1,9 @@
 class_name Player
 extends CharacterBody2D
 
+signal stats_changed
+
+const TARGET_SCOPE := Effect.Scope.PLAYER
 const SPEED := 200.0
 const JUMP_VELOCITY := -450.0
 const MAX_FALL_SPEED := 1000.0
@@ -19,6 +22,9 @@ var fire_cooldown := 0.0
 var coyote_timer := 0.0
 ## Combined effects of worn equipment and the held item.
 var effects := EffectSet.new()
+var stats: Stats
+## Stats of the held weapon, or null when not holding one.
+var weapon_stats: Stats
 
 
 func _ready() -> void:
@@ -29,13 +35,25 @@ func _ready() -> void:
 	_refresh_effects()
 
 
+func base_stats() -> Dictionary:
+	return {Effect.Stat.SPEED: SPEED, Effect.Stat.DEFENSE: 0.0}
+
+
+func held_weapon() -> Weapon:
+	return hotbar.selected_item as Weapon if hotbar else null
+
+
 func _refresh_effects() -> void:
-	var sources: Array[Item] = []
+	var sources: Array = []
 	sources.append_array(equipment.slots)
 	if hotbar:
 		sources.append(hotbar.selected_item)
-	effects = EffectSet.from_items(sources)
-	health.defense = roundi(effects.apply(Effect.Stat.DEFENSE, 0.0))
+	effects = EffectSet.from_sources(sources)
+	stats = effects.resolve(TARGET_SCOPE, base_stats())
+	var weapon := held_weapon()
+	weapon_stats = effects.resolve(Weapon.TARGET_SCOPE, weapon.base_stats()) if weapon else null
+	health.defense = roundi(stats.value(Effect.Stat.DEFENSE))
+	stats_changed.emit()
 
 
 func _physics_process(delta: float) -> void:
@@ -50,14 +68,13 @@ func _physics_process(delta: float) -> void:
 		velocity.y = JUMP_VELOCITY
 		coyote_timer = 0.0
 
-	var speed := effects.apply(Effect.Stat.MOVE_SPEED, SPEED)
-	velocity.x = Input.get_axis("move_left", "move_right") * speed
+	velocity.x = Input.get_axis("move_left", "move_right") * stats.value(Effect.Stat.SPEED)
 
 	fire_cooldown = maxf(fire_cooldown - delta, 0.0)
-	var weapon := hotbar.selected_item as Weapon if hotbar else null
+	var weapon := held_weapon()
 	if weapon and fire_cooldown == 0.0 and _is_trigger_pulled(weapon):
 		_shoot(weapon)
-		fire_cooldown = 1.0 / effects.apply(Effect.Stat.FIRE_RATE, 1.0 / weapon.fire_interval)
+		fire_cooldown = 1.0 / weapon_stats.value(Effect.Stat.FIRE_RATE)
 
 	_step_up_ledge(delta)
 	move_and_slide()
@@ -105,8 +122,7 @@ func _shoot(weapon: Weapon) -> void:
 
 	var projectile := PROJECTILE_SCENE.instantiate()
 	projectile.weapon = weapon
-	projectile.velocity = aim * effects.apply(Effect.Stat.PROJECTILE_SPEED, weapon.projectile_speed)
-	projectile.damage = effects.apply(Effect.Stat.DAMAGE, weapon.damage)
-	projectile.splash_radius = effects.apply(Effect.Stat.SPLASH_RADIUS, weapon.splash_radius)
+	projectile.direction = aim
+	projectile.effects = effects
 	projectile.position = position + aim * PROJECTILE_SPAWN_OFFSET
 	get_parent().add_child(projectile)

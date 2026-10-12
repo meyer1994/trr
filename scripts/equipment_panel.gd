@@ -8,7 +8,7 @@ const KIND_CAPTIONS := {
 	Equippable.Kind.ACCESSORY: "Acc",
 }
 
-@export var equipment: Equipment
+@export var player: Player
 
 var _slots: Array[ItemSlot] = []
 var _defense_label := Label.new()
@@ -22,12 +22,11 @@ func _ready() -> void:
 		var slot := ItemSlot.new(KIND_CAPTIONS[kind], true)
 		_slots.append(slot)
 		add_child(slot)
-	equipment.changed.connect(_refresh)
+	player.stats_changed.connect(_refresh)
 	_refresh()
 
 
 func _refresh() -> void:
 	for index in _slots.size():
-		_slots[index].set_item(equipment.slots[index])
-	var defense := EffectSet.from_items(equipment.slots).apply(Effect.Stat.DEFENSE, 0.0)
-	_defense_label.text = "Defense: %d" % roundi(defense)
+		_slots[index].set_item(player.equipment.slots[index])
+	_defense_label.text = "Defense: %d" % roundi(player.stats.value(Effect.Stat.DEFENSE))
