@@ -1,3 +1,4 @@
+class_name Player
 extends CharacterBody2D
 
 const SPEED := 300.0
@@ -14,7 +15,7 @@ var fire_cooldown := 0.0
 
 
 func _ready() -> void:
-	health.died.connect(_respawn)
+	health.died.connect(respawn)
 
 
 func _physics_process(delta: float) -> void:
@@ -35,16 +36,18 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	if position.y > FALL_LIMIT_Y:
-		_respawn()
+		respawn()
 
 
-func _respawn() -> void:
+func respawn() -> void:
 	position = spawn_position
 	velocity = Vector2.ZERO
 	health.reset()
 
 
 func _is_trigger_pulled(weapon: Weapon) -> bool:
+	if get_viewport().gui_get_hovered_control() != null:
+		return false
 	if weapon.automatic:
 		return Input.is_action_pressed("shoot")
 	return Input.is_action_just_pressed("shoot")

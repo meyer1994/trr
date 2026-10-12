@@ -1,21 +1,44 @@
+class_name Map
 extends TileMapLayer
 
 const CELL_SIZE := 8
 const SOURCE_ID := 0
-const TILE := Vector2i.ZERO
+const DIRT_TILE := Vector2i(0, 0)
+const GRASS_TILE := Vector2i(1, 0)
 const MAP_SIZE_CELLS := Vector2i(144, 81)
-const GROUND_TOP_ROW := 40
-const FILL_COLOR := Color(0.42, 0.33, 0.25)
-const EDGE_COLOR := Color(0.32, 0.25, 0.19)
-
-@export var player: Node2D
-@export var hole_size_cells := Vector2i(12, 8)
+const SURFACE_BASE_ROW := 40
+const SURFACE_AMPLITUDE_ROWS := 14.0
+const SURFACE_FREQUENCY := 0.015
+const DIRT_FILL_COLOR := Color(0.42, 0.33, 0.25)
+const DIRT_EDGE_COLOR := Color(0.32, 0.25, 0.19)
+const GRASS_FILL_COLOR := Color(0.36, 0.62, 0.26)
+const GRASS_EDGE_COLOR := Color(0.26, 0.48, 0.18)
 
 
 func _ready() -> void:
 	tile_set = _build_tile_set()
-	_fill_ground()
-	_carve_hole_around_player()
+
+
+func generate(world_seed: int) -> void:
+	clear()
+	var noise := FastNoiseLite.new()
+	noise.seed = world_seed
+	noise.frequency = SURFACE_FREQUENCY
+	noise.fractal_octaves = 3
+
+	for x in MAP_SIZE_CELLS.x:
+		var surface_row := SURFACE_BASE_ROW + roundi(noise.get_noise_1d(x) * SURFACE_AMPLITUDE_ROWS)
+		set_cell(Vector2i(x, surface_row), SOURCE_ID, GRASS_TILE)
+		for y in range(surface_row + 1, MAP_SIZE_CELLS.y):
+			set_cell(Vector2i(x, y), SOURCE_ID, DIRT_TILE)
+
+
+## Global position of the top edge of the highest solid cell in the column.
+func get_surface_position(column: int) -> Vector2:
+	var row := 0
+	while row < MAP_SIZE_CELLS.y and get_cell_source_id(Vector2i(column, row)) == -1:
+		row += 1
+	return to_global(map_to_local(Vector2i(column, row)) - Vector2(0, CELL_SIZE / 2.0))
 
 
 func destroy_area(world_point: Vector2, radius: float) -> void:
@@ -29,9 +52,9 @@ func destroy_area(world_point: Vector2, radius: float) -> void:
 
 
 func _build_tile_set() -> TileSet:
-	var image := Image.create_empty(CELL_SIZE, CELL_SIZE, false, Image.FORMAT_RGBA8)
-	image.fill(EDGE_COLOR)
-	image.fill_rect(Rect2i(1, 1, CELL_SIZE - 1, CELL_SIZE - 1), FILL_COLOR)
+	var image := Image.create_empty(CELL_SIZE * 2, CELL_SIZE, false, Image.FORMAT_RGBA8)
+	_paint_tile(image, DIRT_TILE, DIRT_FILL_COLOR, DIRT_EDGE_COLOR)
+	_paint_tile(image, GRASS_TILE, GRASS_FILL_COLOR, GRASS_EDGE_COLOR)
 
 	var source := TileSetAtlasSource.new()
 	source.texture = ImageTexture.create_from_image(image)
@@ -42,27 +65,20 @@ func _build_tile_set() -> TileSet:
 	tiles.add_physics_layer()
 	# The source must belong to the TileSet before its tiles can hold physics data.
 	tiles.add_source(source, SOURCE_ID)
-	source.create_tile(TILE)
 
 	var half := CELL_SIZE / 2.0
-	var data := source.get_tile_data(TILE, 0)
-	data.add_collision_polygon(0)
-	data.set_collision_polygon_points(0, 0, PackedVector2Array([
+	var square := PackedVector2Array([
 		Vector2(-half, -half), Vector2(half, -half), Vector2(half, half), Vector2(-half, half),
-	]))
+	])
+	for tile in [DIRT_TILE, GRASS_TILE]:
+		source.create_tile(tile)
+		var data := source.get_tile_data(tile, 0)
+		data.add_collision_polygon(0)
+		data.set_collision_polygon_points(0, 0, square)
 	return tiles
 
 
-func _fill_ground() -> void:
-	for x in MAP_SIZE_CELLS.x:
-		for y in range(GROUND_TOP_ROW, MAP_SIZE_CELLS.y):
-			set_cell(Vector2i(x, y), SOURCE_ID, TILE)
-
-
-func _carve_hole_around_player() -> void:
-	if player == null:
-		return
-	var top_left := local_to_map(to_local(player.global_position)) - hole_size_cells / 2
-	for x in hole_size_cells.x:
-		for y in hole_size_cells.y:
-			erase_cell(top_left + Vector2i(x, y))
+func _paint_tile(image: Image, tile: Vector2i, fill: Color, edge: Color) -> void:
+	var origin := tile * CELL_SIZE
+	image.fill_rect(Rect2i(origin, Vector2i(CELL_SIZE, CELL_SIZE)), edge)
+	image.fill_rect(Rect2i(origin + Vector2i.ONE, Vector2i(CELL_SIZE - 1, CELL_SIZE - 1)), fill)
