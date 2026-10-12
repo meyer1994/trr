@@ -2,8 +2,8 @@ class_name Player
 extends CharacterBody2D
 
 signal stats_changed
+signal held_changed
 
-const TARGET_SCOPE := Effect.Scope.PLAYER
 const SPEED := 200.0
 const JUMP_VELOCITY := -450.0
 const MAX_FALL_SPEED := 1000.0
@@ -11,47 +11,92 @@ const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
 const PROJECTILE_SPAWN_OFFSET := 16.0
 const STEP_HEIGHT := float(Map.CELL_SIZE)
 const COYOTE_TIME := 0.1
-
-@export var hotbar: Hotbar
+const HOTBAR_KEYS: Array[Key] = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
 
 @onready var spawn_position := position
 @onready var health: Health = $Health
 @onready var camera: Camera2D = $Camera2D
+@onready var inventory: Inventory = $Inventory
 @onready var equipment: Equipment = $Equipment
 var fire_cooldown := 0.0
 var coyote_timer := 0.0
+## Inventory slot of the held item; always within the hotbar.
+var held_index := 0
 ## Combined effects of worn equipment and the held item.
 var effects := EffectSet.new()
 var stats: Stats
-## Stats of the held weapon, or null when not holding one.
-var weapon_stats: Stats
+## Stats of the held weapon, which its shots inherit. Null when not holding a weapon.
+var held_stats: Stats
 
 
 func _ready() -> void:
 	health.died.connect(respawn)
+	inventory.changed.connect(_refresh_effects)
 	equipment.changed.connect(_refresh_effects)
-	if hotbar:
-		hotbar.selection_changed.connect(_refresh_effects)
 	_refresh_effects()
 
 
-func base_stats() -> Dictionary:
-	return {Effect.Stat.SPEED: SPEED, Effect.Stat.DEFENSE: 0.0}
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		var index := HOTBAR_KEYS.find(event.physical_keycode)
+		if index != -1:
+			hold(index)
+			get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("wear"):
+		wear(held_index)
+		get_viewport().set_input_as_handled()
+
+
+func held_stack() -> ItemStack:
+	return inventory.slots[held_index]
 
 
 func held_weapon() -> Weapon:
-	return hotbar.selected_item as Weapon if hotbar else null
+	var stack := held_stack()
+	return stack.item as Weapon if stack else null
+
+
+func hold(index: int) -> void:
+	held_index = index
+	held_changed.emit()
+	_refresh_effects()
+
+
+## Moves a wearable stack from the inventory into equipment; the piece it replaces takes its slot.
+func wear(inventory_index: int) -> void:
+	var stack := inventory.slots[inventory_index]
+	if not stack or not stack.item is Equippable:
+		return
+	inventory.take(inventory_index)
+	var replaced := equipment.equip(stack)
+	if replaced:
+		inventory.put(inventory_index, replaced)
+
+
+## Moves a worn piece into the first free inventory slot. Does nothing when the inventory is full.
+func take_off(slot_index: int) -> void:
+	var stack := equipment.slots[slot_index]
+	if not stack or not inventory.add(stack):
+		return
+	equipment.unequip(slot_index)
 
 
 func _refresh_effects() -> void:
 	var sources: Array = []
 	sources.append_array(equipment.slots)
-	if hotbar:
-		sources.append(hotbar.selected_item)
+	var held := held_stack()
+	if held and not held.item is Equippable:
+		sources.append(held)
 	effects = EffectSet.from_sources(sources)
-	stats = effects.resolve(TARGET_SCOPE, base_stats())
+
+	var defense := 0.0
+	for stack in equipment.slots:
+		if stack:
+			defense += effects.resolve(Effect.Target.WORN, stack.item.base_stats()).value(Effect.Stat.DEFENSE)
+	stats = effects.resolve(Effect.Target.PLAYER, {Effect.Stat.SPEED: SPEED, Effect.Stat.DEFENSE: defense})
+
 	var weapon := held_weapon()
-	weapon_stats = effects.resolve(Weapon.TARGET_SCOPE, weapon.base_stats()) if weapon else null
+	held_stats = effects.resolve(Effect.Target.HELD, weapon.base_stats()) if weapon else null
 	health.defense = roundi(stats.value(Effect.Stat.DEFENSE))
 	stats_changed.emit()
 
@@ -74,7 +119,7 @@ func _physics_process(delta: float) -> void:
 	var weapon := held_weapon()
 	if weapon and fire_cooldown == 0.0 and _is_trigger_pulled(weapon):
 		_shoot(weapon)
-		fire_cooldown = 1.0 / weapon_stats.value(Effect.Stat.FIRE_RATE)
+		fire_cooldown = 1.0 / held_stats.value(Effect.Stat.FIRE_RATE)
 
 	_step_up_ledge(delta)
 	move_and_slide()
@@ -123,6 +168,6 @@ func _shoot(weapon: Weapon) -> void:
 	var projectile := PROJECTILE_SCENE.instantiate()
 	projectile.weapon = weapon
 	projectile.direction = aim
-	projectile.effects = effects
+	projectile.stats = held_stats
 	projectile.position = position + aim * PROJECTILE_SPAWN_OFFSET
 	get_parent().add_child(projectile)

@@ -2,12 +2,14 @@
 
 A small Terraria-like 2D game made with Godot 4.
 
-## Items, equipment and effects
+## Inventory, equipment and effects
+
+The player owns an `Inventory` of `ItemStack`s, the copies of items it carries. The first inventory row is the hotbar, and the player holds one of those slots (keys `1`–`0`). Wearing an equippable (right mouse button on the held slot) moves its stack from the inventory into `Equipment`, and whatever it replaces takes its inventory slot. Clicking a worn piece in the equipment panel moves it back to the first free inventory slot.
 
 Effects are built around two contracts. GDScript has no interfaces, so they are duck-typed methods:
 
-- **Effect source**: anything with `get_effects() -> Array[Effect]`. Items are sources today; buffs or ammo can be added later without touching the targets.
-- **Effect target**: anything with a `TARGET_SCOPE` constant and `base_stats() -> Dictionary`. A target resolves its own final `Stats` with `effects.resolve(TARGET_SCOPE, base_stats())`.
+- **Effect source**: anything with `get_effects() -> Array[Effect]`. Item stacks are sources today; buffs or ammo can be added later without touching the targets.
+- **Effect target**: anything with `base_stats() -> Dictionary`. A target resolves its final `Stats` with `effects.resolve(target, base_stats())`.
 
 ```mermaid
 classDiagram
@@ -17,19 +19,19 @@ classDiagram
     }
     class EffectTarget {
         <<interface>>
-        TARGET_SCOPE
         base_stats() Dictionary
     }
     class Effect {
-        scope: Scope
+        target: Target
         stat: Stat
         mode: Mode
         value
+        is_valid() bool
     }
     class EffectSet {
         from_sources(sources)$
         add(effect)
-        resolve(scope, base) Stats
+        resolve(target, base) Stats
     }
     class Stats {
         value(stat) float
@@ -39,6 +41,7 @@ classDiagram
         icon_color
         icon_size
         effects: Array~Effect~
+        base_stats() Dictionary
     }
     class Weapon {
         automatic
@@ -50,65 +53,81 @@ classDiagram
     }
     class Equippable {
         kind: Kind
+        defense
     }
-    class Hotbar {
-        selected_item
-        selection_changed()
+    class ItemStack {
+        item: Item
+        count
+    }
+    class Inventory {
+        slots: Array~ItemStack~
+        add(stack) bool
+        take(index) ItemStack
+        put(index, stack)
+        changed()
     }
     class Equipment {
-        slots: Array~Equippable~
-        equip(item)
-        unequip(index)
+        slots: Array~ItemStack~
+        equip(stack) ItemStack
+        unequip(index) ItemStack
         changed()
     }
     class Player {
+        held_index
         effects: EffectSet
         stats: Stats
-        weapon_stats: Stats
+        held_stats: Stats
+        hold(index)
+        wear(index)
+        take_off(index)
+        base_stats() Dictionary
         stats_changed()
+        held_changed()
     }
     class Projectile {
-        effects: EffectSet
         stats: Stats
     }
 
-    EffectSource <|.. Item
+    EffectSource <|.. ItemStack
     EffectTarget <|.. Player
-    EffectTarget <|.. Weapon
-    EffectTarget <|.. Projectile
+    EffectTarget <|.. Item
     Item <|-- Weapon
     Item <|-- Equippable
     Weapon <|-- Pistol
     Weapon <|-- Rifle
     Weapon <|-- Launcher
     Item o-- Effect : effects
-    Hotbar o-- Item : holds
-    Equipment o-- Equippable : wears
-    EffectSet o-- Effect : grouped by scope
+    ItemStack --> Item
+    Inventory o-- ItemStack : carries
+    Equipment o-- ItemStack : wears
+    EffectSet o-- Effect : grouped by target
     EffectSet ..> Stats : resolves
-    Player --> Hotbar : held item
-    Player --> Equipment : worn items
-    Player ..> Projectile : fires with its EffectSet
+    Player *-- Inventory
+    Player *-- Equipment
+    Player ..> Projectile : fires with held_stats
 ```
 
 ```mermaid
 flowchart LR
-    Worn["Worn equipment"] -->|"always"| Pool["Player EffectSet"]
-    Held["Held item"] -->|"only while held"| Pool
+    Worn["Worn stacks"] -->|"always"| Pool["Player EffectSet"]
+    Held["Held stack, unless wearable"] -->|"only while held"| Pool
+    Pool -->|"resolve WORN, per piece"| WornStats["Worn defense"]
+    WornStats -->|"summed into base"| PlayerStats
     Pool -->|"resolve PLAYER"| PlayerStats["Player stats"]
-    Pool -->|"resolve WEAPON"| WeaponStats["Held weapon stats"]
-    Pool -->|"copied into each shot"| Shot["Projectile resolves PROJECTILE stats"]
+    Pool -->|"resolve HELD"| HeldStats["Held weapon stats"]
+    HeldStats -->|"given to each shot"| Shot["Projectile"]
 ```
 
-- **Items** are Resources (`.tres`): weapons live in `items/`, equipment in `equipment/`.
-- **Equippable** items declare a `kind` (`HEAD`, `BODY`, `LEGS`, `ACCESSORY`), and `Equipment` only puts them in a matching slot.
-- **Effects** change one `Stat` by a `FLAT` amount or a `PERCENT` of the base, on one `Scope`. Each target declares which stats it has:
+- **Items** are Resources (`.tres`) shared by every copy: weapons live in `items/`, equipment in `equipment/`. Anything that differs per copy belongs on `ItemStack`.
+- **Equippable** items declare a `kind` (`HEAD`, `BODY`, `LEGS`, `ACCESSORY`) and a base `defense`, and `Equipment` only puts them in a matching slot.
+- **Effects** change one `Stat` by a `FLAT` amount or a `PERCENT` of the base, on one `Target`:
 
-  | Scope | Target | Stats |
+  | Target | Applies to | Stats |
   |---|---|---|
   | `PLAYER` | The player | `SPEED` (walking), `DEFENSE` |
-  | `WEAPON` | The held weapon | `FIRE_RATE` |
-  | `PROJECTILE` | Each shot fired | `SPEED`, `DAMAGE`, `SPLASH_RADIUS`, `GRAVITY` |
+  | `WORN` | Each worn piece | `DEFENSE` |
+  | `HELD` | The held item and the shots it fires | `FIRE_RATE`, `SPEED` (projectile), `DAMAGE`, `SPLASH_RADIUS`, `GRAVITY` |
 
-- **Resolving**: final values are `(base + flat) * (1 + percent)`. An effect on a stat its target doesn't have is skipped with a warning.
-- **The player** rebuilds its `EffectSet` whenever equipment or the hotbar selection changes, then resolves its own stats and the held weapon's. Each projectile gets the set that was active when it was fired and resolves its own stats. Equipment effects apply all the time; a weapon's own effects apply only while it is held.
+- **Resolving**: final values are `(base + flat) * (1 + percent)`. The player resolves each worn piece's defense first, sums it into its own base, then resolves its `PLAYER` stats and the held weapon's `HELD` stats. Each projectile keeps the held stats from the moment it was fired.
+- **Validation**: an effect whose stat isn't listed for its target is ignored with a warning, once per effect. A valid effect whose target lacks the stat right now (a damage bonus while holding boots) is skipped silently.
+- **When**: the player rebuilds its `EffectSet` whenever the inventory, equipment or held slot changes. Equipment effects apply only while worn, never while merely held; other items' effects apply only while held.

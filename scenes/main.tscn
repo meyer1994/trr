@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/map.gd" id="2_map"]
@@ -18,6 +18,7 @@
 [ext_resource type="Resource" path="res://equipment/running_boots.tres" id="16_running_boots"]
 [ext_resource type="Script" path="res://scripts/ui/equipment_panel.gd" id="17_equipment_panel"]
 [ext_resource type="Resource" path="res://equipment/gunpowder_charm.tres" id="18_gunpowder_charm"]
+[ext_resource type="Script" path="res://scripts/inventory/inventory.gd" id="19_inventory"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(20, 42)
@@ -29,11 +30,10 @@ script = ExtResource("10_world")
 texture_filter = 1
 script = ExtResource("2_map")
 
-[node name="Player" type="CharacterBody2D" parent="." node_paths=PackedStringArray("hotbar")]
+[node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(576, 300)
 collision_layer = 2
 script = ExtResource("1_player")
-hotbar = NodePath("../UI/Hotbar")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
 shape = SubResource("RectangleShape2D_player")
@@ -53,9 +53,13 @@ position = Vector2(0, 26)
 script = ExtResource("9_health_bar")
 health = NodePath("../Health")
 
+[node name="Inventory" type="Node" parent="Player"]
+script = ExtResource("19_inventory")
+starting_items = Array[ExtResource("4_item")]([ExtResource("5_pistol"), ExtResource("6_rifle"), ExtResource("7_launcher"), ExtResource("16_running_boots")])
+
 [node name="Equipment" type="Node" parent="Player"]
 script = ExtResource("11_equipment")
-starting_items = Array[ExtResource("12_equippable")]([ExtResource("13_iron_helmet"), ExtResource("14_iron_chainmail"), ExtResource("15_iron_greaves"), ExtResource("16_running_boots"), ExtResource("18_gunpowder_charm")])
+starting_items = Array[ExtResource("12_equippable")]([ExtResource("13_iron_helmet"), ExtResource("14_iron_chainmail"), ExtResource("15_iron_greaves"), ExtResource("18_gunpowder_charm")])
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
 position_smoothing_enabled = true
@@ -63,14 +67,14 @@ position_smoothing_speed = 8.0
 
 [node name="UI" type="CanvasLayer" parent="."]
 
-[node name="Hotbar" type="HBoxContainer" parent="UI"]
+[node name="Hotbar" type="HBoxContainer" parent="UI" node_paths=PackedStringArray("player")]
 offset_left = 8.0
 offset_top = 8.0
 offset_right = 444.0
 offset_bottom = 48.0
 theme_override_constants/separation = 4
 script = ExtResource("3_hotbar")
-items = Array[ExtResource("4_item")]([ExtResource("5_pistol"), ExtResource("6_rifle"), ExtResource("7_launcher")])
+player = NodePath("../../Player")
 
 [node name="EquipmentPanel" type="VBoxContainer" parent="UI" node_paths=PackedStringArray("player")]
 anchors_preset = 2

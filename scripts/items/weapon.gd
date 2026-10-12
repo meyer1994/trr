@@ -1,8 +1,6 @@
 class_name Weapon
 extends Item
 
-const TARGET_SCOPE := Effect.Scope.WEAPON
-
 @export var automatic := false
 @export var fire_interval := 0.25
 @export var damage := 10.0
@@ -14,5 +12,12 @@ const TARGET_SCOPE := Effect.Scope.WEAPON
 @export var projectile_gravity := 0.0
 
 
+## Held stats, including the ones each projectile it fires inherits.
 func base_stats() -> Dictionary:
-	return {Effect.Stat.FIRE_RATE: 1.0 / fire_interval}
+	return {
+		Effect.Stat.FIRE_RATE: 1.0 / fire_interval,
+		Effect.Stat.SPEED: projectile_speed,
+		Effect.Stat.DAMAGE: damage,
+		Effect.Stat.SPLASH_RADIUS: splash_radius,
+		Effect.Stat.GRAVITY: projectile_gravity,
+	}

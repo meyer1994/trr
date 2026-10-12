@@ -14,28 +14,31 @@ const SLOT_KINDS := [
 @export var starting_items: Array[Equippable] = []
 
 ## One entry per slot in SLOT_KINDS. Null means the slot is empty.
-var slots: Array[Equippable] = []
+var slots: Array[ItemStack] = []
 
 
 func _ready() -> void:
 	slots.resize(SLOT_KINDS.size())
 	for item in starting_items:
-		equip(item)
+		equip(ItemStack.new(item))
 
 
-## Puts the item in a matching slot, preferring an empty one.
-## Returns whatever it replaced, or the item itself if no slot fits.
-func equip(item: Equippable) -> Equippable:
+## Puts the stack in a matching slot, preferring an empty one.
+## Returns whatever it replaced, or the stack itself if it isn't wearable or no slot fits.
+func equip(stack: ItemStack) -> ItemStack:
+	var item := stack.item as Equippable
+	if not item:
+		return stack
 	var index := _slot_for(item.kind)
 	if index == -1:
-		return item
+		return stack
 	var previous := slots[index]
-	slots[index] = item
+	slots[index] = stack
 	changed.emit()
 	return previous
 
 
-func unequip(index: int) -> Equippable:
+func unequip(index: int) -> ItemStack:
 	var previous := slots[index]
 	slots[index] = null
 	changed.emit()

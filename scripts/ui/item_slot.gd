@@ -28,10 +28,11 @@ func _init(caption := "", caption_only_when_empty := false) -> void:
 	_label.position = Vector2(4, 0)
 	_label.add_theme_font_size_override("font_size", 10)
 	add_child(_label)
-	set_item(null)
+	set_stack(null)
 
 
-func set_item(item: Item) -> void:
+func set_stack(stack: ItemStack) -> void:
+	var item := stack.item if stack else null
 	_icon.visible = item != null
 	_label.visible = item == null or not _caption_only_when_empty
 	if item:
