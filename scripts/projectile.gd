@@ -4,22 +4,27 @@ const LIFETIME := 2.0
 const WORLD_COLLISION_MASK := 1
 
 var direction := Vector2.RIGHT
-var tool: Tool
+var weapon: Weapon
+var velocity := Vector2.ZERO
 
 @onready var body: ColorRect = $ColorRect
 
 
 func _ready() -> void:
-	rotation = direction.angle()
-	body.color = tool.color
-	body.size = tool.projectile_size
-	body.position = -tool.projectile_size / 2
+	velocity = direction * weapon.projectile_speed
+	rotation = velocity.angle()
+	body.color = weapon.projectile_color
+	body.size = weapon.projectile_size
+	body.position = -weapon.projectile_size / 2
 	get_tree().create_timer(LIFETIME).timeout.connect(queue_free)
 
 
 func _physics_process(delta: float) -> void:
+	velocity.y += weapon.projectile_gravity * delta
+	rotation = velocity.angle()
+
 	# Ray-cast each step so fast shots can't skip over thin walls between frames.
-	var next_position := global_position + direction * tool.speed * delta
+	var next_position := global_position + velocity * delta
 	var query := PhysicsRayQueryParameters2D.create(global_position, next_position, WORLD_COLLISION_MASK)
 	query.hit_from_inside = true
 	var hit := get_world_2d().direct_space_state.intersect_ray(query)
@@ -28,5 +33,5 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if hit.collider.has_method("destroy_area"):
-		hit.collider.destroy_area(hit.position, tool.blast_radius)
+		hit.collider.destroy_area(hit.position, weapon.blast_radius)
 	queue_free()

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="Rifle" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/rifle.gd" id="1_rifle"]
+
+[resource]
+script = ExtResource("1_rifle")
+display_name = "Rifle"
+icon_color = Color(0.4, 0.9, 1, 1)
+projectile_color = Color(0.4, 0.9, 1, 1)

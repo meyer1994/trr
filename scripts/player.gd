@@ -22,10 +22,10 @@ func _physics_process(delta: float) -> void:
 	velocity.x = Input.get_axis("move_left", "move_right") * SPEED
 
 	fire_cooldown = maxf(fire_cooldown - delta, 0.0)
-	var tool := hotbar.selected_tool if hotbar else null
-	if tool and Input.is_action_pressed("shoot") and fire_cooldown == 0.0:
-		_shoot(tool)
-		fire_cooldown = tool.fire_interval
+	var weapon := hotbar.selected_item as Weapon if hotbar else null
+	if weapon and fire_cooldown == 0.0 and _is_trigger_pulled(weapon):
+		_shoot(weapon)
+		fire_cooldown = weapon.fire_interval
 
 	move_and_slide()
 
@@ -34,13 +34,19 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 
 
-func _shoot(tool: Tool) -> void:
+func _is_trigger_pulled(weapon: Weapon) -> bool:
+	if weapon.automatic:
+		return Input.is_action_pressed("shoot")
+	return Input.is_action_just_pressed("shoot")
+
+
+func _shoot(weapon: Weapon) -> void:
 	var aim := global_position.direction_to(get_global_mouse_position())
 	if aim == Vector2.ZERO:
 		aim = Vector2.RIGHT
 
 	var projectile := PROJECTILE_SCENE.instantiate()
 	projectile.direction = aim
-	projectile.tool = tool
+	projectile.weapon = weapon
 	projectile.position = position + aim * PROJECTILE_SPAWN_OFFSET
 	get_parent().add_child(projectile)

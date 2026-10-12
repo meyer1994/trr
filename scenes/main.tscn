@@ -3,10 +3,10 @@
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/map.gd" id="2_map"]
 [ext_resource type="Script" path="res://scripts/hotbar.gd" id="3_hotbar"]
-[ext_resource type="Script" path="res://scripts/tool.gd" id="4_tool"]
-[ext_resource type="Resource" path="res://tools/blaster.tres" id="5_blaster"]
-[ext_resource type="Resource" path="res://tools/bomb.tres" id="6_bomb"]
-[ext_resource type="Resource" path="res://tools/needle.tres" id="7_needle"]
+[ext_resource type="Script" path="res://scripts/items/item.gd" id="4_item"]
+[ext_resource type="Resource" path="res://items/pistol.tres" id="5_pistol"]
+[ext_resource type="Resource" path="res://items/rifle.tres" id="6_rifle"]
+[ext_resource type="Resource" path="res://items/launcher.tres" id="7_launcher"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(13.6, 13.6)
@@ -43,4 +43,4 @@ offset_right = 444.0
 offset_bottom = 48.0
 theme_override_constants/separation = 4
 script = ExtResource("3_hotbar")
-tools = Array[ExtResource("4_tool")]([ExtResource("5_blaster"), ExtResource("6_bomb"), ExtResource("7_needle")])
+items = Array[ExtResource("4_item")]([ExtResource("5_pistol"), ExtResource("6_rifle"), ExtResource("7_launcher")])
