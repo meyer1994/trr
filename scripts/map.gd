@@ -3,9 +3,6 @@ extends TileMapLayer
 
 const CELL_SIZE := 16
 const SOURCE_ID := 0
-const DIRT_TILE := Vector2i(0, 0)
-const GRASS_TILE := Vector2i(1, 0)
-const EMPTY := Vector2i(-1, -1)
 
 const CHUNK_SIZE := 32
 const LOAD_RADIUS := Vector2i(3, 2)
@@ -21,18 +18,17 @@ const ISLAND_MIN_HEIGHT := 25
 const ISLAND_FREQUENCY := 0.03
 const ISLAND_SQUASH := 3.0
 const ISLAND_THRESHOLD := 0.5
-
-const DIRT_FILL_COLOR := Color(0.42, 0.33, 0.25)
-const DIRT_EDGE_COLOR := Color(0.32, 0.25, 0.19)
-const GRASS_FILL_COLOR := Color(0.36, 0.62, 0.26)
-const GRASS_DEPTH := 5
+const STONE_DEPTH := 14
+const STONE_WOBBLE_ROWS := 4.0
 
 var _surface_noise := FastNoiseLite.new()
 var _cave_noise := FastNoiseLite.new()
 var _island_noise := FastNoiseLite.new()
 var _loaded := {}
 ## Player changes that override the generator, kept while their chunk is unloaded.
+## Maps a cell to its Block, or null for a removed block.
 var _edits := {}
+var _atlas_column := {}
 
 
 func _ready() -> void:
@@ -80,12 +76,25 @@ func surface_row(column: int) -> int:
 	return roundi(_surface_noise.get_noise_1d(column) * SURFACE_AMPLITUDE_ROWS)
 
 
-## Generated tile for a cell, ignoring player edits.
-func tile_at(cell: Vector2i) -> Vector2i:
+## Generated block for a cell, ignoring player edits. Null means empty.
+func generated_block_at(cell: Vector2i) -> Block:
 	var surface := surface_row(cell.x)
 	var solid := _is_solid(cell.x, cell.y, surface)
 	var solid_above := _is_solid(cell.x, cell.y - 1, surface)
-	return _pick_tile(solid, solid_above, cell.y, surface)
+	return _pick_block(solid, solid_above, cell.y, surface, _stone_row(cell.x, surface))
+
+
+## Block currently placed in a loaded cell. Null means empty.
+func get_block(cell: Vector2i) -> Block:
+	if get_cell_source_id(cell) == -1:
+		return null
+	return Blocks.ALL[get_cell_atlas_coords(cell).x]
+
+
+## Places a block, or removes it when `block` is null. Survives chunk reloads.
+func set_block(cell: Vector2i, block: Block) -> void:
+	_place(cell, block)
+	_edits[cell] = block
 
 
 ## Global position of the top edge of the surface cell in the column.
@@ -96,18 +105,20 @@ func get_surface_position(column: int) -> Vector2:
 
 func destroy_area(world_point: Vector2, radius: float) -> void:
 	var center := local_to_map(to_local(world_point))
-	_erase(center)
+	set_block(center, null)
 	var reach := ceili(radius / CELL_SIZE)
 	for x in range(center.x - reach, center.x + reach + 1):
 		for y in range(center.y - reach, center.y + reach + 1):
 			var cell := Vector2i(x, y)
 			if to_global(map_to_local(cell)).distance_to(world_point) <= radius:
-				_erase(cell)
+				set_block(cell, null)
 
 
-func _erase(cell: Vector2i) -> void:
-	erase_cell(cell)
-	_edits[cell] = EMPTY
+func _place(cell: Vector2i, block: Block) -> void:
+	if block:
+		set_cell(cell, SOURCE_ID, Vector2i(_atlas_column[block], 0))
+	else:
+		erase_cell(cell)
 
 
 func _chunk_at(world_point: Vector2) -> Vector2i:
@@ -120,13 +131,15 @@ func _load_chunk(chunk: Vector2i) -> void:
 	var origin := chunk * CHUNK_SIZE
 	for x in range(origin.x, origin.x + CHUNK_SIZE):
 		var surface := surface_row(x)
+		var stone_row := _stone_row(x, surface)
 		var solid_above := _is_solid(x, origin.y - 1, surface)
 		for y in range(origin.y, origin.y + CHUNK_SIZE):
 			var cell := Vector2i(x, y)
 			var solid := _is_solid(x, y, surface)
-			var tile: Vector2i = _edits.get(cell, _pick_tile(solid, solid_above, y, surface))
-			if tile != EMPTY:
-				set_cell(cell, SOURCE_ID, tile)
+			var block: Block = _edits[cell] if _edits.has(cell) \
+					else _pick_block(solid, solid_above, y, surface, stone_row)
+			if block:
+				_place(cell, block)
 			solid_above = solid
 	_loaded[chunk] = true
 
@@ -147,12 +160,18 @@ func _is_solid(x: int, y: int, surface: int) -> bool:
 	return false
 
 
-func _pick_tile(solid: bool, solid_above: bool, y: int, surface: int) -> Vector2i:
+func _stone_row(x: int, surface: int) -> int:
+	return surface + STONE_DEPTH + roundi(_cave_noise.get_noise_1d(x) * STONE_WOBBLE_ROWS)
+
+
+func _pick_block(solid: bool, solid_above: bool, y: int, surface: int, stone_row: int) -> Block:
 	if not solid:
-		return EMPTY
+		return null
 	if y <= surface and not solid_above:
-		return GRASS_TILE
-	return DIRT_TILE
+		return Blocks.GRASS
+	if y >= stone_row:
+		return Blocks.STONE
+	return Blocks.DIRT
 
 
 func _setup_noise(noise: FastNoiseLite, noise_seed: int, frequency: float, octaves: int) -> void:
@@ -162,11 +181,11 @@ func _setup_noise(noise: FastNoiseLite, noise_seed: int, frequency: float, octav
 
 
 func _build_tile_set() -> TileSet:
-	var image := Image.create_empty(CELL_SIZE * 2, CELL_SIZE, false, Image.FORMAT_RGBA8)
-	_paint_tile(image, DIRT_TILE)
-	_paint_tile(image, GRASS_TILE)
-	var grass_origin := GRASS_TILE * CELL_SIZE + Vector2i.ONE
-	image.fill_rect(Rect2i(grass_origin, Vector2i(CELL_SIZE - 1, GRASS_DEPTH)), GRASS_FILL_COLOR)
+	var image := Image.create_empty(CELL_SIZE * Blocks.ALL.size(), CELL_SIZE, false, Image.FORMAT_RGBA8)
+	for column in Blocks.ALL.size():
+		var block := Blocks.ALL[column]
+		block.paint(image, Vector2i(column * CELL_SIZE, 0), CELL_SIZE)
+		_atlas_column[block] = column
 
 	var source := TileSetAtlasSource.new()
 	source.texture = ImageTexture.create_from_image(image)
@@ -182,15 +201,10 @@ func _build_tile_set() -> TileSet:
 	var square := PackedVector2Array([
 		Vector2(-half, -half), Vector2(half, -half), Vector2(half, half), Vector2(-half, half),
 	])
-	for tile in [DIRT_TILE, GRASS_TILE]:
+	for column in Blocks.ALL.size():
+		var tile := Vector2i(column, 0)
 		source.create_tile(tile)
 		var data := source.get_tile_data(tile, 0)
 		data.add_collision_polygon(0)
 		data.set_collision_polygon_points(0, 0, square)
 	return tiles
-
-
-func _paint_tile(image: Image, tile: Vector2i) -> void:
-	var origin := tile * CELL_SIZE
-	image.fill_rect(Rect2i(origin, Vector2i(CELL_SIZE, CELL_SIZE)), DIRT_EDGE_COLOR)
-	image.fill_rect(Rect2i(origin + Vector2i.ONE, Vector2i(CELL_SIZE - 1, CELL_SIZE - 1)), DIRT_FILL_COLOR)
